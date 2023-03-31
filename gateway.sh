@@ -1,5 +1,5 @@
 #!/bin/sh -e
-setenforce 0
+
 DIRNAME=`dirname $0`
 cd $DIRNAME
 USAGE="$0 [ --update ]"
@@ -45,13 +45,7 @@ make -f /usr/share/selinux/devel/Makefile gateway.pp || exit
 # Generate a man page off the installed module
 sepolicy manpage -p . -d gateway_t
 # Fixing the file context on /usr/bin/gateway
-/sbin/restorecon -F -R -v /opt/gateway
-/sbin/restorecon -F -R -v /opt/gateway/*/gateway
-# Fixing the file context on /var/log/gateway
-/sbin/restorecon -F -R -v /var/log/gateway
-/sbin/restorecon -F -R -v /etc/gateway
-# Generate a rpm package for the newly generated policy
+
 
 pwd=$(pwd)
 rpmbuild --define "_sourcedir ${pwd}" --define "_specdir ${pwd}" --define "_builddir ${pwd}" --define "_srcrpmdir ${pwd}" --define "_rpmdir ${pwd}" --define "_buildrootdir ${pwd}/.build"  -ba gateway_selinux.spec
-setenforce 1
