@@ -1,0 +1,162 @@
+
+## <summary>policy for gateway</summary>
+
+########################################
+## <summary>
+##	Execute gateway_exec_t in the gateway domain.
+## </summary>
+## <param name="domain">
+## <summary>
+##	Domain allowed to transition.
+## </summary>
+## </param>
+#
+interface(`gateway_domtrans',`
+	gen_require(`
+		type gateway_t, gateway_exec_t;
+	')
+
+	corecmd_search_bin($1)
+	domtrans_pattern($1, gateway_exec_t, gateway_t)
+')
+
+######################################
+## <summary>
+##	Execute gateway in the caller domain.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`gateway_exec',`
+	gen_require(`
+		type gateway_exec_t;
+	')
+
+	corecmd_search_bin($1)
+	can_exec($1, gateway_exec_t)
+')
+########################################
+## <summary>
+##	Read gateway's log files.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+## <rolecap/>
+#
+interface(`gateway_read_log',`
+	gen_require(`
+		type gateway_log_t;
+	')
+
+	logging_search_logs($1)
+	read_files_pattern($1, gateway_log_t, gateway_log_t)
+')
+
+########################################
+## <summary>
+##	Manage gateway's config files.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+## <rolecap/>
+#
+interface(`gateway_manage_conf',`
+	gen_require(`
+		type gateway_conf_t;
+	')
+
+    manage_dirs_pattern($1, gateway_conf_t, gateway_conf_t)
+	manage_files_pattern($1, gateway_conf_t, gateway_conf_t)
+')
+
+########################################
+## <summary>
+##	Append to gateway log files.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`gateway_append_log',`
+	gen_require(`
+		type gateway_log_t;
+	')
+
+	logging_search_logs($1)
+	append_files_pattern($1, gateway_log_t, gateway_log_t)
+')
+
+########################################
+## <summary>
+##	Manage gateway log files
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`gateway_manage_log',`
+	gen_require(`
+		type gateway_log_t;
+	')
+
+	logging_search_logs($1)
+	manage_dirs_pattern($1, gateway_log_t, gateway_log_t)
+	manage_files_pattern($1, gateway_log_t, gateway_log_t)
+	manage_lnk_files_pattern($1, gateway_log_t, gateway_log_t)
+')
+
+########################################
+## <summary>
+##	All of the rules required to administrate
+##	an gateway environment
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+## <param name="role">
+##	<summary>
+##	Role allowed access.
+##	</summary>
+## </param>
+## <rolecap/>
+#
+interface(`gateway_admin',`
+	gen_require(`
+		type gateway_t;
+		type gateway_log_t;
+		type gateway_conf_t;
+		type gateway_exec_t;
+	')
+
+	allow $1 gateway_t:process { signal_perms };
+	ps_process_pattern($1, gateway_t)
+
+    tunable_policy(`deny_ptrace',`',`
+        allow $1 gateway_t:process ptrace;
+    ')
+
+	logging_search_logs($1)
+	admin_pattern($1, gateway_log_t)
+	admin_pattern($1, gateway_conf_t)
+	admin_pattern($1, gateway_t)
+	admin_pattern($1, gateway_exec_t)
+	optional_policy(`
+		systemd_passwd_agent_exec($1)
+		systemd_read_fifo_file_passwd_run($1)
+	')
+')

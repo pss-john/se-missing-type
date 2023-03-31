@@ -1,0 +1,105 @@
+policy_module(gateway, 1.0.0)
+
+require {
+    type logrotate_t;
+    type sysadm_t;
+    type http_port_t;
+    type cert_t;
+    type kernel_t;
+    type net_conf_t;
+    type node_t;
+    type passwd_file_t;
+    type sysctl_net_t;
+    type proc_t;
+    type sysfs_t;
+    type user_home_t;
+    type unreserved_port_t;
+    role sysadm_r;
+    type unconfined_t;
+    role unconfined_r;
+    class dir search;
+}
+
+########################################
+#
+# Declarations
+#
+#role gateway_r;
+#allow system_r gateway_r;
+
+type gateway_t;
+#role gateway_r types gateway_t;
+type gateway_exec_t;
+init_daemon_domain(gateway_t, gateway_exec_t)
+
+permissive gateway_t;
+
+type gateway_log_t;
+logging_log_file(gateway_log_t)
+
+
+# allow init_t (systemd) to execute file
+allow init_t gateway_exec_t : file { read getattr execute open } ;
+# allow init_t type transition
+allow init_t gateway_t : process { transition siginh } ;
+
+# create init_t (systemd) type transition to gateway_t
+type_transition init_t gateway_exec_t : process gateway_t;
+
+
+########################################
+#
+# gateway local policy
+#
+allow gateway_t self:fifo_file rw_fifo_file_perms;
+allow gateway_t self:unix_stream_socket create_stream_socket_perms;
+#allow gateway_t http_port_t:tcp_socket name_bind
+
+manage_dirs_pattern(gateway_t, gateway_log_t, gateway_log_t)
+manage_files_pattern(gateway_t, gateway_log_t, gateway_log_t)
+manage_lnk_files_pattern(gateway_t, gateway_log_t, gateway_log_t)
+logging_log_filetrans(gateway_t, gateway_log_t, { dir file lnk_file })
+
+domain_use_interactive_fds(gateway_t)
+
+
+type gateway_conf_t;
+manage_dirs_pattern(gateway_t, gateway_conf_t, gateway_conf_t)
+manage_files_pattern(gateway_t, gateway_conf_t, gateway_conf_t)
+miscfiles_read_localization(gateway_t)
+
+allow init_t gateway_conf_t:dir search;
+init_nnp_daemon_domain(gateway_t)
+
+gateway_admin(unconfined_t, unconfined_r)
+gateway_admin(sysadm_t, sysadm_r)
+gateway_manage_log(logrotate_t)
+
+allow gateway_t self:capability net_bind_service;
+
+#!!!! This avc can be allowed using the boolean 'nis_enabled'
+allow gateway_t self:tcp_socket { accept listen };
+corenet_tcp_bind_http_port(gateway_t)
+
+
+allow gateway_t cert_t:dir { open read search };
+allow gateway_t cert_t:file { getattr open read };
+allow gateway_t cert_t:lnk_file read;
+allow gateway_t http_port_t:tcp_socket name_connect;
+allow gateway_t kernel_t:unix_dgram_socket sendto;
+allow gateway_t net_conf_t:file { getattr open read };
+allow gateway_t node_t:tcp_socket node_bind;
+allow gateway_t passwd_file_t:file { open read };
+allow gateway_t proc_t:file { getattr open read };
+allow gateway_t self:netlink_route_socket { bind create getattr nlmsg_read };
+allow gateway_t self:tcp_socket { bind connect create getattr getopt setopt };
+allow gateway_t self:udp_socket { connect create getattr setopt };
+allow gateway_t self:unix_dgram_socket { bind connect create getattr };
+allow gateway_t sysctl_net_t:dir search;
+allow gateway_t sysctl_net_t:file { open read };
+allow gateway_t sysfs_t:file { open read };
+allow gateway_t user_home_t:file { open read };
+allow gateway_t unreserved_port_t:tcp_socket name_connect;
+
+
+

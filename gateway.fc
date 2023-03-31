@@ -1,0 +1,9 @@
+/opt/gateway(/.*)?                  gen_context(system_u:object_r:gateway_t,s0)
+
+/opt/gateway/(.+)/gateway		--	gen_context(system_u:object_r:gateway_exec_t,s0)
+
+/var/log/gateway(/.*)?	            gen_context(system_u:object_r:gateway_log_t,s0)
+
+/etc/gateway(/.*)?                  gen_context(system_u:object_r:gateway_conf_t,s0)
+
+
